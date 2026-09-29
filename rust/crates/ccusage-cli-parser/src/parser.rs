@@ -44,6 +44,7 @@ impl RootAllOptions {
             session_id: None,
             sections: self.sections,
             by_agent: self.by_agent,
+            by_provider: false,
             pi_path: None,
             open_claw_path: None,
             codex_speed: CodexSpeed::Auto,
@@ -423,6 +424,7 @@ fn parse_all_command(
         session_id: None,
         sections,
         by_agent,
+        by_provider: false,
         pi_path: None,
         open_claw_path: None,
         codex_speed: CodexSpeed::Auto,
@@ -467,6 +469,7 @@ fn parse_top_level_session_command(
         session_id: None,
         sections,
         by_agent,
+        by_provider: false,
         pi_path: None,
         open_claw_path: None,
         codex_speed: CodexSpeed::Auto,
@@ -629,6 +632,7 @@ fn parse_codex_command(
         session_id,
         sections: None,
         by_agent: false,
+        by_provider: false,
         pi_path: None,
         open_claw_path: None,
         codex_speed,
@@ -642,6 +646,7 @@ fn parse_pi_command(
 ) -> Result<Command, String> {
     let kind = parse_agent_report_kind(parser, "pi", STANDARD_AGENT_REPORTS)?;
     let mut pi_path = None;
+    let mut by_provider = false;
     let mut codex_speed = CodexSpeed::Auto;
     config.apply_agent_args(&mut codex_speed, Some(&mut pi_path), None);
     while parser.peek().is_some() {
@@ -650,6 +655,7 @@ fn parse_pi_command(
         }
         match parser.next_flag()?.as_str() {
             "--pi-path" => pi_path = Some(parser.value_for("--pi-path")?),
+            "--by-provider" => by_provider = true,
             flag => return Err(format!("Unknown pi option '{flag}'")),
         }
     }
@@ -659,6 +665,7 @@ fn parse_pi_command(
         session_id: None,
         sections: None,
         by_agent: false,
+        by_provider,
         pi_path,
         open_claw_path: None,
         codex_speed,
@@ -689,6 +696,7 @@ fn parse_openclaw_command(
         session_id: None,
         sections: None,
         by_agent: false,
+        by_provider: false,
         pi_path: None,
         open_claw_path,
         codex_speed,
@@ -720,6 +728,7 @@ fn agent_command_args(shared: SharedArgs, kind: AgentReportKind) -> AgentCommand
         session_id: None,
         sections: None,
         by_agent: false,
+        by_provider: false,
         pi_path: None,
         open_claw_path: None,
         codex_speed: CodexSpeed::Auto,

@@ -1383,6 +1383,7 @@ fn parses_pi_session_options() {
         "--json",
         "--pi-path",
         "/tmp/pi-sessions",
+        "--by-provider",
     ]);
     let Some(Command::Pi(args)) = cli.command else {
         panic!("expected pi command");
@@ -1390,6 +1391,7 @@ fn parses_pi_session_options() {
     assert_eq!(args.kind, AgentReportKind::Session);
     assert!(args.shared.json);
     assert_eq!(args.pi_path.as_deref(), Some("/tmp/pi-sessions"));
+    assert!(args.by_provider);
 }
 
 #[test]

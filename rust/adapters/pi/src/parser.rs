@@ -11,7 +11,7 @@ use serde::Deserialize;
 use crate::{
     LoadedEntry, Pricing, PricingMap, Result, TokenUsageRaw, UsageEntry, UsageMessage,
     apply_total_token_fallback, calculate_cost_for_usage_at, calculate_cost_from_pricing,
-    cli::CostMode, fast::LinePrefilter, format_date_tz, missing_pricing_model_for_usage,
+    cli::CostMode, format_date_tz, missing_pricing_model_for_usage,
 };
 use ccusage_adapter_common::jsonl;
 
@@ -31,6 +31,12 @@ struct PiLine {
     parent_session: Option<String>,
     #[serde(default, deserialize_with = "jsonl::non_empty_string")]
     id: Option<String>,
+    #[serde(
+        rename = "thinkingLevel",
+        default,
+        deserialize_with = "jsonl::non_empty_string"
+    )]
+    thinking_level: Option<String>,
     message: Option<PiMessage>,
 }
 
@@ -54,6 +60,8 @@ struct PiEntryLink {
 struct PiMessage {
     #[serde(default, deserialize_with = "jsonl::non_empty_string")]
     role: Option<String>,
+    #[serde(default, deserialize_with = "jsonl::non_empty_string")]
+    provider: Option<String>,
     #[serde(default, deserialize_with = "jsonl::non_empty_string")]
     model: Option<String>,
     usage: Option<PiUsage>,
@@ -308,11 +316,15 @@ fn read_session_file_data_with_context(
     let header = parse_session_header(&content);
     // Usable pi lines carry token counts under a `usage` key nested in a
     // `message` object, so require both substrings before JSON parsing.
-    let prefilter = LinePrefilter::all(&[br#""usage""#, br#""message""#]);
     let mut entries = Vec::new();
+    let mut thinking_level: Option<String> = None;
     let mut usage_records = Vec::new();
 
-    for record in jsonl::records::<PiLine>(&content, Some(&prefilter)) {
+    for record in jsonl::records::<PiLine>(&content, None) {
+        if record.r#type.as_deref() == Some("thinking_level_change") {
+            thinking_level = record.thinking_level.clone();
+            continue;
+        }
         if !is_pi_message_usage(&record) {
             continue;
         }
@@ -393,7 +405,15 @@ fn read_session_file_data_with_context(
                 id: None,
             },
             cost_usd: display_cost,
-            request_id: None,
+            // Reuse the existing optional metadata field so provider survives
+            // the shared core model without changing other adapters.
+            request_id: message.provider.as_ref().map(|provider| {
+                format!(
+                    "{}\u{1f}|{}",
+                    provider,
+                    thinking_level.as_deref().unwrap_or("unknown")
+                )
+            }),
             is_api_error_message: None,
             is_sidechain: None,
         };
