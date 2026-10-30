@@ -94,6 +94,7 @@ mod tests {
             session_id: None,
             sections: None,
             by_agent: false,
+            by_provider: false,
             pi_path: None,
             open_claw_path: None,
             codex_speed: CodexSpeed::Auto,

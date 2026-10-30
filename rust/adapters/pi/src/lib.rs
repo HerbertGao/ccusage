@@ -32,7 +32,7 @@ pub fn run(args: AgentCommandArgs) -> Result<()> {
     });
     if wants_json(&args.shared) {
         return print_json_or_jq(
-            report_from_rows(&rows, args.kind),
+            report_from_rows(&rows, &entries, args.kind, args.by_provider),
             args.shared.jq.as_deref(),
             args.shared.no_cost,
         );
